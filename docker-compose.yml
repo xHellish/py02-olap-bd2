@@ -1,0 +1,351 @@
+name: py02-olap
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Perfiles disponibles (combínalos según necesidad):
+#    core          → postgres-oltp, mongo, elasticsearch
+#    dw            → hive-metastore, hiveserver2, spark-master, spark-worker
+#    orchestration → postgres-airflow, airflow-init, airflow-webserver, airflow-scheduler
+#    graph         → neo4j
+#    viz           → postgres-serving, superset
+#
+#  Arranque rápido completo:
+#    docker compose --profile core --profile dw --profile orchestration \
+#                   --profile graph --profile viz up -d
+# ─────────────────────────────────────────────────────────────────────────────
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.10.4
+  env_file: .env
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@postgres-airflow/${AIRFLOW_POSTGRES_DB}
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    AIRFLOW_CONN_SPARK_DEFAULT: spark://spark-master:7077
+    AIRFLOW_CONN_POSTGRES_OLTP: postgresql://${OLTP_USER}:${OLTP_PASSWORD}@${OLTP_HOST}:5432/${OLTP_DB}
+    AIRFLOW_CONN_ELASTICSEARCH_DEFAULT: http://elasticsearch:9200
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./spark/jobs:/opt/airflow/spark_jobs
+    - airflow-logs:/opt/airflow/logs
+  depends_on:
+    postgres-airflow:
+      condition: service_healthy
+  networks:
+    - olap-net
+
+services:
+  # ── CORE ────────────────────────────────────────────────────────────────────
+
+  postgres-oltp:
+    image: postgres:16-alpine
+    container_name: py02_postgres_oltp
+    profiles: [core]
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${OLTP_DB}
+      POSTGRES_USER: ${OLTP_USER}
+      POSTGRES_PASSWORD: ${OLTP_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-oltp-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${OLTP_USER} -d ${OLTP_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olap-net
+
+  mongo:
+    image: mongo:8
+    container_name: py02_mongo
+    profiles: [core]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olap-net
+
+  elasticsearch:
+    image: elasticsearch:8.15.5
+    container_name: py02_elasticsearch
+    profiles: [core]
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - olap-net
+
+  # ── DATA WAREHOUSE (Hive + Spark) ─────────────────────────────────────────
+
+  # Postgres como metastore de Hive (más liviano que Derby)
+  postgres-hive-meta:
+    image: postgres:16-alpine
+    container_name: py02_hive_meta_db
+    profiles: [dw]
+    environment:
+      POSTGRES_DB: metastore
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive123
+    volumes:
+      - hive-meta-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olap-net
+
+  hive-metastore:
+    image: apache/hive:4.0.0
+    container_name: py02_hive_metastore
+    profiles: [dw]
+    command: /opt/hive/bin/hive --service metastore
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      SERVICE_OPTS: >-
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres-hive-meta:5432/metastore
+        -Djavax.jdo.option.ConnectionUserName=hive
+        -Djavax.jdo.option.ConnectionPassword=hive123
+    ports:
+      - "9083:9083"
+    volumes:
+      - hive-warehouse:/opt/hive/data/warehouse
+    depends_on:
+      postgres-hive-meta:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:10002/hwi/ || nc -z localhost 9083"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+    networks:
+      - olap-net
+
+  hiveserver2:
+    image: apache/hive:4.0.0
+    container_name: py02_hiveserver2
+    profiles: [dw]
+    command: /opt/hive/bin/hive --service hiveserver2
+    environment:
+      SERVICE_NAME: hiveserver2
+      IS_RESUME: "true"
+      SERVICE_OPTS: >-
+        -Dhive.metastore.uris=thrift://hive-metastore:9083
+    ports:
+      - "10000:10000"   # JDBC/Beeline
+      - "10002:10002"   # Web UI
+    volumes:
+      - hive-warehouse:/opt/hive/data/warehouse
+    depends_on:
+      hive-metastore:
+        condition: service_started
+    networks:
+      - olap-net
+
+  spark-master:
+    image: bitnami/spark:3.5
+    container_name: py02_spark_master
+    profiles: [dw]
+    environment:
+      SPARK_MODE: master
+      SPARK_RPC_AUTHENTICATION_ENABLED: "no"
+      SPARK_RPC_ENCRYPTION_ENABLED: "no"
+      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "no"
+      SPARK_SSL_ENABLED: "no"
+      SPARK_MASTER_WEBUI_PORT: 8080
+    ports:
+      - "8080:8080"   # Web UI
+      - "7077:7077"   # Spark master port
+    volumes:
+      - ./spark/jobs:/opt/bitnami/spark/jobs
+      - hive-warehouse:/opt/hive/data/warehouse
+    networks:
+      - olap-net
+
+  spark-worker:
+    image: bitnami/spark:3.5
+    container_name: py02_spark_worker
+    profiles: [dw]
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: 2G
+      SPARK_WORKER_CORES: 2
+      SPARK_RPC_AUTHENTICATION_ENABLED: "no"
+      SPARK_RPC_ENCRYPTION_ENABLED: "no"
+      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "no"
+      SPARK_SSL_ENABLED: "no"
+    depends_on:
+      - spark-master
+    volumes:
+      - ./spark/jobs:/opt/bitnami/spark/jobs
+      - hive-warehouse:/opt/hive/data/warehouse
+    networks:
+      - olap-net
+
+  # ── ORCHESTRATION (Airflow) ───────────────────────────────────────────────
+
+  postgres-airflow:
+    image: postgres:16-alpine
+    container_name: py02_postgres_airflow
+    profiles: [orchestration]
+    environment:
+      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB}
+      POSTGRES_USER: ${AIRFLOW_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD}
+    volumes:
+      - postgres-airflow-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AIRFLOW_POSTGRES_USER} -d ${AIRFLOW_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olap-net
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: py02_airflow_init
+    profiles: [orchestration]
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create --username admin --password admin
+          --firstname Admin --lastname User
+          --role Admin --email admin@example.com
+      "
+    restart: "no"
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: py02_airflow_webserver
+    profiles: [orchestration]
+    command: webserver
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: py02_airflow_scheduler
+    profiles: [orchestration]
+    command: scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # ── GRAPH (Neo4J) ─────────────────────────────────────────────────────────
+
+  neo4j:
+    image: neo4j:5.24-community
+    container_name: py02_neo4j
+    profiles: [graph]
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH}
+      NEO4J_PLUGINS: '["graph-data-science"]'
+      NEO4J_dbms_security_procedures_unrestricted: gds.*
+      NEO4J_dbms_memory_heap_initial__size: 512m
+      NEO4J_dbms_memory_heap_max__size: 1G
+    ports:
+      - "7474:7474"   # Browser
+      - "7687:7687"   # Bolt
+    volumes:
+      - neo4j-data:/data
+      - ./neo4j/import:/var/lib/neo4j/import
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+    networks:
+      - olap-net
+
+  # ── VISUALIZATION (Superset) ──────────────────────────────────────────────
+
+  postgres-serving:
+    image: postgres:16-alpine
+    container_name: py02_postgres_serving
+    profiles: [viz]
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${SERVING_DB}
+      POSTGRES_USER: ${SERVING_USER}
+      POSTGRES_PASSWORD: ${SERVING_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-serving-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SERVING_USER} -d ${SERVING_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olap-net
+
+  superset:
+    image: apache/superset:4.1.1
+    container_name: py02_superset
+    profiles: [viz]
+    environment:
+      SUPERSET_SECRET_KEY: "superset-secret-py02-olap"
+      SUPERSET_LOAD_EXAMPLES: "no"
+    ports:
+      - "8088:8088"
+    volumes:
+      - superset-data:/app/superset_home
+      - ./superset/assets:/app/assets
+    depends_on:
+      postgres-serving:
+        condition: service_healthy
+    networks:
+      - olap-net
+
+volumes:
+  postgres-oltp-data:
+  mongo-data:
+  es-data:
+  hive-meta-data:
+  hive-warehouse:
+  postgres-airflow-data:
+  neo4j-data:
+  postgres-serving-data:
+  superset-data:
+  airflow-logs:
+
+networks:
+  olap-net:
+    driver: bridge

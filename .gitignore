@@ -1,0 +1,35 @@
+# Env
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Datos generados
+*.parquet
+*.csv
+neo4j/import/*.csv
+
+# Logs y temporales
+logs/
+*.log
+airflow/logs/
+
+# Volúmenes Docker locales
+volumes/
+
+# Superset cache
+superset/.cache/
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Docs
+Proyecto1
