@@ -14,7 +14,8 @@ name: py02-olap
 # ─────────────────────────────────────────────────────────────────────────────
 
 x-airflow-common: &airflow-common
-  image: apache/airflow:2.10.4
+  build:
+    context: ./airflow      # usa airflow/Dockerfile con docker SDK + psycopg2 + ES
   env_file: .env
   environment:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -30,6 +31,7 @@ x-airflow-common: &airflow-common
     - ./airflow/dags:/opt/airflow/dags
     - ./spark/jobs:/opt/airflow/spark_jobs
     - airflow-logs:/opt/airflow/logs
+    - /var/run/docker.sock:/var/run/docker.sock   # permite exec en py02_spark_master
   depends_on:
     postgres-airflow:
       condition: service_healthy
@@ -130,18 +132,20 @@ services:
         -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres-hive-meta:5432/metastore
         -Djavax.jdo.option.ConnectionUserName=hive
         -Djavax.jdo.option.ConnectionPassword=hive123
+        -Dhive.metastore.warehouse.dir=file:///opt/hive/data/warehouse
     ports:
       - "9083:9083"
     volumes:
       - hive-warehouse:/opt/hive/data/warehouse
+      - ./drivers/postgresql-42.7.4.jar:/opt/hive/lib/postgresql-42.7.4.jar:ro
     depends_on:
       postgres-hive-meta:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fs http://localhost:10002/hwi/ || nc -z localhost 9083"]
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9083' 2>/dev/null && exit 0 || exit 1"]
       interval: 20s
       timeout: 10s
-      retries: 10
+      retries: 15
     networks:
       - olap-net
 
@@ -155,11 +159,14 @@ services:
       IS_RESUME: "true"
       SERVICE_OPTS: >-
         -Dhive.metastore.uris=thrift://hive-metastore:9083
+        -Dhive.metastore.warehouse.dir=file:///opt/hive/data/warehouse
     ports:
       - "10000:10000"   # JDBC/Beeline
       - "10002:10002"   # Web UI
     volumes:
       - hive-warehouse:/opt/hive/data/warehouse
+      - ./warehouse:/warehouse:ro          # DDL scripts accesibles desde beeline
+      - ./drivers/postgresql-42.7.4.jar:/opt/hive/lib/postgresql-42.7.4.jar:ro
     depends_on:
       hive-metastore:
         condition: service_started
@@ -167,42 +174,42 @@ services:
       - olap-net
 
   spark-master:
-    image: bitnami/spark:3.5
+    image: apache/spark:3.5.1
     container_name: py02_spark_master
     profiles: [dw]
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    user: root
     environment:
-      SPARK_MODE: master
-      SPARK_RPC_AUTHENTICATION_ENABLED: "no"
-      SPARK_RPC_ENCRYPTION_ENABLED: "no"
-      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "no"
-      SPARK_SSL_ENABLED: "no"
+      SPARK_MASTER_HOST: spark-master
+      SPARK_MASTER_PORT: 7077
       SPARK_MASTER_WEBUI_PORT: 8080
     ports:
       - "8080:8080"   # Web UI
       - "7077:7077"   # Spark master port
     volumes:
-      - ./spark/jobs:/opt/bitnami/spark/jobs
+      - ./spark/jobs:/opt/spark/jobs
+      - ./spark/conf/hive-site.xml:/opt/spark/conf/hive-site.xml:ro
+      - ./drivers/postgresql-42.7.4.jar:/opt/spark/jars/postgresql-42.7.4.jar:ro
       - hive-warehouse:/opt/hive/data/warehouse
     networks:
       - olap-net
 
   spark-worker:
-    image: bitnami/spark:3.5
+    image: apache/spark:3.5.1
     container_name: py02_spark_worker
     profiles: [dw]
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    user: root
     environment:
-      SPARK_MODE: worker
-      SPARK_MASTER_URL: spark://spark-master:7077
-      SPARK_WORKER_MEMORY: 2G
+      SPARK_WORKER_MEMORY: 2g
       SPARK_WORKER_CORES: 2
-      SPARK_RPC_AUTHENTICATION_ENABLED: "no"
-      SPARK_RPC_ENCRYPTION_ENABLED: "no"
-      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "no"
-      SPARK_SSL_ENABLED: "no"
+      SPARK_WORKER_WEBUI_PORT: 8081
     depends_on:
       - spark-master
     volumes:
-      - ./spark/jobs:/opt/bitnami/spark/jobs
+      - ./spark/jobs:/opt/spark/jobs
+      - ./spark/conf/hive-site.xml:/opt/spark/conf/hive-site.xml:ro
+      - ./drivers/postgresql-42.7.4.jar:/opt/spark/jars/postgresql-42.7.4.jar:ro
       - hive-warehouse:/opt/hive/data/warehouse
     networks:
       - olap-net
@@ -231,13 +238,7 @@ services:
     <<: *airflow-common
     container_name: py02_airflow_init
     profiles: [orchestration]
-    command: >
-      bash -c "
-        airflow db migrate &&
-        airflow users create --username admin --password admin
-          --firstname Admin --lastname User
-          --role Admin --email admin@example.com
-      "
+    command: bash -c "airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com"
     restart: "no"
 
   airflow-webserver:
@@ -285,6 +286,7 @@ services:
     volumes:
       - neo4j-data:/data
       - ./neo4j/import:/var/lib/neo4j/import
+      - ./neo4j:/scripts:ro    # scripts Cypher accesibles en /scripts/
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
       interval: 20s
