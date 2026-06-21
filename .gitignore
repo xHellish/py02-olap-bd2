@@ -31,5 +31,8 @@ superset/.cache/
 .vscode/
 *.swp
 
+# Dependencias binarias (JARs descargados en tiempo de build)
+drivers/*.jar
+
 # Docs
 Proyecto1
