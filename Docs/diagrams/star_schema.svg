@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 750" font-family="Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#555"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="750" fill="#f8f9fa" rx="8"/>
+  <text x="550" y="32" text-anchor="middle" font-size="18" font-weight="bold" fill="#1a1a2e">Esquema Estrella — restaurantes_dw</text>
+  <text x="550" y="52" text-anchor="middle" font-size="11" fill="#666">2 tablas de hechos · 8 dimensiones · ORC+SNAPPY · Particionado year/month</text>
+
+  <!-- ── FACT: fact_orders (center-left) ── -->
+  <rect x="310" y="280" width="200" height="190" rx="6" fill="#e63946" stroke="#c1121f" stroke-width="2"/>
+  <rect x="310" y="280" width="200" height="26" rx="6" fill="#c1121f"/>
+  <text x="410" y="298" text-anchor="middle" fill="white" font-weight="bold" font-size="13">fact_orders</text>
+  <text x="320" y="322" fill="white" font-size="11">🔑 date_key</text>
+  <text x="320" y="337" fill="white" font-size="11">🔑 time_key</text>
+  <text x="320" y="352" fill="white" font-size="11">🔑 customer_key</text>
+  <text x="320" y="367" fill="white" font-size="11">🔑 restaurant_key</text>
+  <text x="320" y="382" fill="white" font-size="11">🔑 courier_key</text>
+  <text x="320" y="397" fill="white" font-size="11">🔑 location_key</text>
+  <text x="320" y="415" fill="#ffd" font-size="11">📊 order_total</text>
+  <text x="320" y="430" fill="#ffd" font-size="11">📊 items_count</text>
+  <text x="320" y="445" fill="#ffd" font-size="11">📊 delivery_distance_km</text>
+  <text x="320" y="460" fill="#ffd" font-size="11">📊 delivery_time_min</text>
+
+  <!-- ── FACT: fact_order_items (center-right) ── -->
+  <rect x="590" y="280" width="200" height="190" rx="6" fill="#e63946" stroke="#c1121f" stroke-width="2"/>
+  <rect x="590" y="280" width="200" height="26" rx="6" fill="#c1121f"/>
+  <text x="690" y="298" text-anchor="middle" fill="white" font-weight="bold" font-size="13">fact_order_items</text>
+  <text x="600" y="322" fill="white" font-size="11">🔑 date_key</text>
+  <text x="600" y="337" fill="white" font-size="11">🔑 time_key</text>
+  <text x="600" y="352" fill="white" font-size="11">🔑 product_key</text>
+  <text x="600" y="367" fill="white" font-size="11">🔑 category_key</text>
+  <text x="600" y="382" fill="white" font-size="11">🔑 customer_key</text>
+  <text x="600" y="397" fill="white" font-size="11">🔑 restaurant_key</text>
+  <text x="600" y="415" fill="#ffd" font-size="11">📊 quantity</text>
+  <text x="600" y="430" fill="#ffd" font-size="11">📊 unit_price</text>
+  <text x="600" y="445" fill="#ffd" font-size="11">📊 line_total</text>
+
+  <!-- ── DIM: dim_date (top-center) ── -->
+  <rect x="440" y="80" width="220" height="120" rx="6" fill="#457b9d" stroke="#1d3557" stroke-width="1.5"/>
+  <rect x="440" y="80" width="220" height="22" rx="6" fill="#1d3557"/>
+  <text x="550" y="96" text-anchor="middle" fill="white" font-weight="bold">dim_date</text>
+  <text x="450" y="116" fill="white" font-size="11">🔑 date_key</text>
+  <text x="450" y="131" fill="#cce" font-size="11">year · quarter · month</text>
+  <text x="450" y="146" fill="#cce" font-size="11">month_name · day</text>
+  <text x="450" y="161" fill="#cce" font-size="11">day_of_week · is_weekend</text>
+  <text x="450" y="176" fill="#cce" font-size="11">365 filas</text>
+
+  <!-- ── DIM: dim_time (top-right) ── -->
+  <rect x="710" y="80" width="200" height="100" rx="6" fill="#457b9d" stroke="#1d3557" stroke-width="1.5"/>
+  <rect x="710" y="80" width="200" height="22" rx="6" fill="#1d3557"/>
+  <text x="810" y="96" text-anchor="middle" fill="white" font-weight="bold">dim_time</text>
+  <text x="720" y="116" fill="white" font-size="11">🔑 time_key</text>
+  <text x="720" y="131" fill="#cce" font-size="11">hour · time_label</text>
+  <text x="720" y="146" fill="#cce" font-size="11">time_of_day (franja)</text>
+  <text x="720" y="161" fill="#cce" font-size="11">24 filas</text>
+
+  <!-- ── DIM: dim_product (right) ── -->
+  <rect x="870" y="250" width="200" height="110" rx="6" fill="#2a9d8f" stroke="#264653" stroke-width="1.5"/>
+  <rect x="870" y="250" width="200" height="22" rx="6" fill="#264653"/>
+  <text x="970" y="266" text-anchor="middle" fill="white" font-weight="bold">dim_product</text>
+  <text x="880" y="287" fill="white" font-size="11">🔑 product_key</text>
+  <text x="880" y="302" fill="#cfe" font-size="11">name · price</text>
+  <text x="880" y="317" fill="#cfe" font-size="11">category_key (FK→dim_category)</text>
+  <text x="880" y="332" fill="#cfe" font-size="11">available</text>
+  <text x="880" y="347" fill="#cfe" font-size="11">32 filas</text>
+
+  <!-- ── DIM: dim_category (far-right) ── -->
+  <rect x="870" y="400" width="200" height="90" rx="6" fill="#2a9d8f" stroke="#264653" stroke-width="1.5"/>
+  <rect x="870" y="400" width="200" height="22" rx="6" fill="#264653"/>
+  <text x="970" y="416" text-anchor="middle" fill="white" font-weight="bold">dim_category</text>
+  <text x="880" y="436" fill="white" font-size="11">🔑 category_key</text>
+  <text x="880" y="451" fill="#cfe" font-size="11">category_name</text>
+  <text x="880" y="466" fill="#cfe" font-size="11">8 filas (copo de nieve)</text>
+  <text x="880" y="481" fill="#cfe" font-size="11"> </text>
+
+  <!-- ── DIM: dim_customer (left) ── -->
+  <rect x="30" y="250" width="200" height="110" rx="6" fill="#457b9d" stroke="#1d3557" stroke-width="1.5"/>
+  <rect x="30" y="250" width="200" height="22" rx="6" fill="#1d3557"/>
+  <text x="130" y="266" text-anchor="middle" fill="white" font-weight="bold">dim_customer</text>
+  <text x="40" y="287" fill="white" font-size="11">🔑 customer_key</text>
+  <text x="40" y="302" fill="#cce" font-size="11">name · email</text>
+  <text x="40" y="317" fill="#cce" font-size="11">role · zone</text>
+  <text x="40" y="332" fill="#cce" font-size="11">lat · lon</text>
+  <text x="40" y="347" fill="#cce" font-size="11">80 filas</text>
+
+  <!-- ── DIM: dim_restaurant (top-left) ── -->
+  <rect x="110" y="80" width="200" height="110" rx="6" fill="#457b9d" stroke="#1d3557" stroke-width="1.5"/>
+  <rect x="110" y="80" width="200" height="22" rx="6" fill="#1d3557"/>
+  <text x="210" y="96" text-anchor="middle" fill="white" font-weight="bold">dim_restaurant</text>
+  <text x="120" y="116" fill="white" font-size="11">🔑 restaurant_key</text>
+  <text x="120" y="131" fill="#cce" font-size="11">name · address</text>
+  <text x="120" y="146" fill="#cce" font-size="11">zone · lat · lon</text>
+  <text x="120" y="161" fill="#cce" font-size="11">rating</text>
+  <text x="120" y="176" fill="#cce" font-size="11">5 filas</text>
+
+  <!-- ── DIM: dim_courier (bottom-left) ── -->
+  <rect x="30" y="540" width="200" height="100" rx="6" fill="#457b9d" stroke="#1d3557" stroke-width="1.5"/>
+  <rect x="30" y="540" width="200" height="22" rx="6" fill="#1d3557"/>
+  <text x="130" y="556" text-anchor="middle" fill="white" font-weight="bold">dim_courier</text>
+  <text x="40" y="577" fill="white" font-size="11">🔑 courier_key</text>
+  <text x="40" y="592" fill="#cce" font-size="11">name · vehicle</text>
+  <text x="40" y="607" fill="#cce" font-size="11">base_zone</text>
+  <text x="40" y="622" fill="#cce" font-size="11">12 filas</text>
+
+  <!-- ── DIM: dim_location (bottom-center) ── -->
+  <rect x="320" y="560" width="200" height="100" rx="6" fill="#2a9d8f" stroke="#264653" stroke-width="1.5"/>
+  <rect x="320" y="560" width="200" height="22" rx="6" fill="#264653"/>
+  <text x="420" y="576" text-anchor="middle" fill="white" font-weight="bold">dim_location</text>
+  <text x="330" y="596" fill="white" font-size="11">🔑 location_key</text>
+  <text x="330" y="611" fill="#cfe" font-size="11">zone · zone_name</text>
+  <text x="330" y="626" fill="#cfe" font-size="11">lat · lon</text>
+  <text x="330" y="641" fill="#cfe" font-size="11">7 filas</text>
+
+  <!-- ── Arrows: dim_date → both facts ── -->
+  <line x1="550" y1="200" x2="450" y2="280" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="580" y1="200" x2="640" y2="280" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ── Arrows: dim_time → both facts ── -->
+  <line x1="760" y1="180" x2="500" y2="300" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="780" y1="180" x2="720" y2="290" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ── Arrows: dim_product → fact_order_items ── -->
+  <line x1="870" y1="310" x2="790" y2="360" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ── Arrows: dim_category → dim_product (snowflake) ── -->
+  <line x1="970" y1="400" x2="970" y2="360" stroke="#2a9d8f" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+  <!-- ── Arrows: dim_customer → both facts ── -->
+  <line x1="230" y1="310" x2="310" y2="365" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="235" y1="320" x2="590" y2="380" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ── Arrows: dim_restaurant → both facts ── -->
+  <line x1="250" y1="175" x2="360" y2="280" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="270" y1="175" x2="650" y2="280" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ── Arrows: dim_courier → fact_orders ── -->
+  <line x1="200" y1="540" x2="360" y2="470" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ── Arrows: dim_location → fact_orders ── -->
+  <line x1="420" y1="560" x2="410" y2="470" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Legend -->
+  <rect x="30" y="680" width="500" height="55" rx="4" fill="white" stroke="#ddd"/>
+  <rect x="40" y="692" width="12" height="12" fill="#c1121f"/>
+  <text x="58" y="703" font-size="11" fill="#333">Tabla de hechos (measures)</text>
+  <rect x="180" y="692" width="12" height="12" fill="#1d3557"/>
+  <text x="198" y="703" font-size="11" fill="#333">Dimensión temporal/geográfica/persona</text>
+  <rect x="40" y="714" width="12" height="12" fill="#264653"/>
+  <text x="58" y="725" font-size="11" fill="#333">Dimensión producto/categoría</text>
+  <line x1="180" y1="720" x2="205" y2="720" stroke="#2a9d8f" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="210" y="725" font-size="11" fill="#333">Relación copo de nieve</text>
+</svg>

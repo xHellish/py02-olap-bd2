@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 680" font-family="Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#555"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#457b9d"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="680" fill="#f0f4f8" rx="10"/>
+  <text x="500" y="34" text-anchor="middle" font-size="18" font-weight="bold" fill="#1a1a2e">Modelo de Grafo Neo4J — restaurantes_dw</text>
+  <text x="500" y="54" text-anchor="middle" font-size="11" fill="#666">6 tipos de nodo · 7 tipos de relación · 20,137 nodos · 120,358 relaciones</text>
+
+  <!-- ── NODE: User (left-center) ── -->
+  <circle cx="160" cy="340" r="58" fill="#e63946" stroke="#c1121f" stroke-width="2" filter="url(#shadow)"/>
+  <text x="160" y="330" text-anchor="middle" fill="white" font-weight="bold" font-size="14">User</text>
+  <text x="160" y="348" text-anchor="middle" fill="#ffd" font-size="10">id · name · email</text>
+  <text x="160" y="362" text-anchor="middle" fill="#ffd" font-size="10">role · zone · lat/lon</text>
+  <text x="160" y="378" text-anchor="middle" fill="white" font-weight="bold" font-size="11">81 nodos</text>
+
+  <!-- ── NODE: Order (center) ── -->
+  <circle cx="500" cy="340" r="64" fill="#e63946" stroke="#c1121f" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="500" y="328" text-anchor="middle" fill="white" font-weight="bold" font-size="15">Order</text>
+  <text x="500" y="346" text-anchor="middle" fill="#ffd" font-size="10">id · status · total</text>
+  <text x="500" y="360" text-anchor="middle" fill="#ffd" font-size="10">payment_method</text>
+  <text x="500" y="374" text-anchor="middle" fill="#ffd" font-size="10">order_ts</text>
+  <text x="500" y="392" text-anchor="middle" fill="white" font-weight="bold" font-size="11">20,000 nodos</text>
+
+  <!-- ── NODE: Product (right-center) ── -->
+  <circle cx="840" cy="340" r="58" fill="#2a9d8f" stroke="#264653" stroke-width="2" filter="url(#shadow)"/>
+  <text x="840" y="330" text-anchor="middle" fill="white" font-weight="bold" font-size="14">Product</text>
+  <text x="840" y="348" text-anchor="middle" fill="#cfe" font-size="10">id · name · price</text>
+  <text x="840" y="362" text-anchor="middle" fill="#cfe" font-size="10">available · category</text>
+  <text x="840" y="378" text-anchor="middle" fill="white" font-weight="bold" font-size="11">32 nodos</text>
+
+  <!-- ── NODE: Restaurant (top-center) ── -->
+  <circle cx="500" cy="148" r="56" fill="#f4a261" stroke="#e76f51" stroke-width="2" filter="url(#shadow)"/>
+  <text x="500" y="138" text-anchor="middle" fill="white" font-weight="bold" font-size="14">Restaurant</text>
+  <text x="500" y="155" text-anchor="middle" fill="#fff" font-size="10">id · name · address</text>
+  <text x="500" y="169" text-anchor="middle" fill="#fff" font-size="10">zone · lat/lon · rating</text>
+  <text x="500" y="185" text-anchor="middle" fill="white" font-weight="bold" font-size="11">5 nodos</text>
+
+  <!-- ── NODE: Location (bottom-center) ── -->
+  <circle cx="500" cy="540" r="56" fill="#457b9d" stroke="#1d3557" stroke-width="2" filter="url(#shadow)"/>
+  <text x="500" y="530" text-anchor="middle" fill="white" font-weight="bold" font-size="14">Location</text>
+  <text x="500" y="547" text-anchor="middle" fill="#cce" font-size="10">zone · zone_name</text>
+  <text x="500" y="561" text-anchor="middle" fill="#cce" font-size="10">lat · lon</text>
+  <text x="500" y="577" text-anchor="middle" fill="white" font-weight="bold" font-size="11">7 nodos</text>
+
+  <!-- ── NODE: Courier (bottom-left) ── -->
+  <circle cx="160" cy="540" r="56" fill="#6a4c93" stroke="#4a2c73" stroke-width="2" filter="url(#shadow)"/>
+  <text x="160" y="530" text-anchor="middle" fill="white" font-weight="bold" font-size="14">Courier</text>
+  <text x="160" y="547" text-anchor="middle" fill="#dcd" font-size="10">id · name · vehicle</text>
+  <text x="160" y="561" text-anchor="middle" fill="#dcd" font-size="10">base_zone</text>
+  <text x="160" y="577" text-anchor="middle" fill="white" font-weight="bold" font-size="11">12 nodos</text>
+
+  <!-- ── RELATIONSHIP: User -[PLACED]-> Order ── -->
+  <line x1="218" y1="340" x2="436" y2="340" stroke="#c1121f" stroke-width="2.5" marker-end="url(#arr)"/>
+  <rect x="277" y="324" width="110" height="20" rx="3" fill="#fff" stroke="#c1121f" stroke-width="1"/>
+  <text x="332" y="338" text-anchor="middle" fill="#c1121f" font-weight="bold" font-size="11">PLACED</text>
+
+  <!-- ── RELATIONSHIP: Order -[CONTAINS]-> Product ── -->
+  <line x1="564" y1="340" x2="782" y2="340" stroke="#264653" stroke-width="2.5" marker-end="url(#arr)"/>
+  <rect x="612" y="324" width="122" height="20" rx="3" fill="#fff" stroke="#264653" stroke-width="1"/>
+  <text x="673" y="338" text-anchor="middle" fill="#264653" font-weight="bold" font-size="11">CONTAINS</text>
+  <text x="673" y="315" text-anchor="middle" fill="#666" font-size="10">quantity · unit_price</text>
+
+  <!-- ── RELATIONSHIP: Order -[FROM_RESTAURANT]-> Restaurant ── -->
+  <line x1="500" y1="276" x2="500" y2="204" stroke="#e76f51" stroke-width="2.5" marker-end="url(#arr)"/>
+  <rect x="370" y="233" width="160" height="20" rx="3" fill="#fff" stroke="#e76f51" stroke-width="1"/>
+  <text x="450" y="247" text-anchor="middle" fill="#e76f51" font-weight="bold" font-size="11">FROM_RESTAURANT</text>
+
+  <!-- ── RELATIONSHIP: Order -[DELIVERED_TO]-> Location ── -->
+  <line x1="500" y1="404" x2="500" y2="484" stroke="#1d3557" stroke-width="2.5" marker-end="url(#arr)"/>
+  <rect x="368" y="436" width="145" height="20" rx="3" fill="#fff" stroke="#1d3557" stroke-width="1"/>
+  <text x="440" y="450" text-anchor="middle" fill="#1d3557" font-weight="bold" font-size="11">DELIVERED_TO</text>
+  <text x="440" y="428" text-anchor="middle" fill="#666" font-size="10">distance_km · eta_min</text>
+
+  <!-- ── RELATIONSHIP: Courier -[ASSIGNED]-> Order ── -->
+  <line x1="214" y1="510" x2="436" y2="385" stroke="#6a4c93" stroke-width="2.5" marker-end="url(#arr)"/>
+  <rect x="255" y="448" width="105" height="20" rx="3" fill="#fff" stroke="#6a4c93" stroke-width="1"/>
+  <text x="308" y="462" text-anchor="middle" fill="#6a4c93" font-weight="bold" font-size="11">ASSIGNED</text>
+
+  <!-- ── RELATIONSHIP: User -[RECOMMENDS]-> User (self-loop arc) ── -->
+  <path d="M 110,300 Q 60,230 120,260" stroke="#c1121f" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <rect x="30" y="255" width="115" height="20" rx="3" fill="#fff" stroke="#c1121f" stroke-width="1"/>
+  <text x="88" y="269" text-anchor="middle" fill="#c1121f" font-weight="bold" font-size="11">RECOMMENDS</text>
+  <text x="88" y="245" text-anchor="middle" fill="#666" font-size="10">300 relaciones</text>
+
+  <!-- ── RELATIONSHIP: Location -[ROUTE]-> Location (self-loop arc) ── -->
+  <path d="M 556,575 Q 650,640 600,570" stroke="#1d3557" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <rect x="572" y="613" width="108" height="20" rx="3" fill="#fff" stroke="#1d3557" stroke-width="1"/>
+  <text x="626" y="627" text-anchor="middle" fill="#1d3557" font-weight="bold" font-size="11">ROUTE</text>
+  <text x="626" y="643" text-anchor="middle" fill="#666" font-size="10">distance_km · time_min</text>
+  <text x="626" y="657" text-anchor="middle" fill="#666" font-size="10">21 rutas bidireccionales</text>
+
+  <!-- Stats box -->
+  <rect x="690" y="470" width="290" height="145" rx="6" fill="white" stroke="#ddd" stroke-width="1.5"/>
+  <text x="835" y="490" text-anchor="middle" fill="#1a1a2e" font-weight="bold" font-size="13">Estadísticas del grafo</text>
+  <line x1="700" y1="496" x2="970" y2="496" stroke="#eee"/>
+  <text x="705" y="514" fill="#333" font-size="11">Nodos totales:</text>
+  <text x="970" y="514" text-anchor="end" fill="#e63946" font-weight="bold" font-size="11">20,137</text>
+  <text x="705" y="530" fill="#333" font-size="11">Relaciones totales:</text>
+  <text x="970" y="530" text-anchor="end" fill="#2a9d8f" font-weight="bold" font-size="11">120,358</text>
+  <text x="705" y="546" fill="#333" font-size="11">PLACED / FROM_RESTAURANT:</text>
+  <text x="970" y="546" text-anchor="end" fill="#555" font-size="11">20,000 c/u</text>
+  <text x="705" y="562" fill="#333" font-size="11">CONTAINS:</text>
+  <text x="970" y="562" text-anchor="end" fill="#555" font-size="11">~50,246</text>
+  <text x="705" y="578" fill="#333" font-size="11">DELIVERED_TO / ASSIGNED:</text>
+  <text x="970" y="578" text-anchor="end" fill="#555" font-size="11">~15,005</text>
+  <text x="705" y="594" fill="#333" font-size="11">RECOMMENDS:</text>
+  <text x="970" y="594" text-anchor="end" fill="#555" font-size="11">300</text>
+  <text x="705" y="610" fill="#333" font-size="11">ROUTE (bidireccional):</text>
+  <text x="970" y="610" text-anchor="end" fill="#555" font-size="11">42 (21 pares)</text>
+</svg>
