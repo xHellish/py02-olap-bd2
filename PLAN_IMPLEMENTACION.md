@@ -453,10 +453,10 @@ clean:    ## Apaga y borra volúmenes
 ## Estado de avance (actualizar conforme se desarrolla)
 
 - [x] Fase 1 — Scaffolding e infraestructura
-- [ ] Fase 2 — Generación de datos
-- [ ] Fase 3 — Data Warehouse + OLAP (Hive)
-- [ ] Fase 4 — Procesamiento Spark
-- [ ] Fase 5 — Orquestación Airflow
-- [ ] Fase 6 — Neo4J + enrutamiento
+- [x] Fase 2 — Generación de datos
+- [x] Fase 3 — Data Warehouse + OLAP (Hive)
+- [x] Fase 4 — Procesamiento Spark
+- [x] Fase 5 — Orquestación Airflow
+- [x] Fase 6 — Neo4J + enrutamiento
 - [ ] Fase 7 — Visualización Superset
 - [ ] Fase 8 — Documentación y demo
