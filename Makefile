@@ -1,4 +1,4 @@
-.PHONY: up up-all down clean seed logs ps validate hive-init spark-job neo4j-export-csv neo4j-load neo4j-queries neo4j-routing airflow-up superset-init
+.PHONY: up up-all down clean seed logs ps validate hive-init spark-job neo4j-export-csv neo4j-load neo4j-queries neo4j-routing airflow-up superset-init superset-dashboards
 
 # ── Perfiles individuales ─────────────────────────────────────────────────────
 core:
@@ -138,6 +138,11 @@ superset-init:
 	    --email admin@example.com --password admin
 	docker compose exec superset superset db upgrade
 	docker compose exec superset superset init
+
+# ── Superset: crear dashboards vía API ────────────────────────────────────────
+superset-dashboards:
+	pip install -q -r superset/requirements.txt
+	python superset/setup_dashboards.py
 
 # ── Validación rápida ──────────────────────────────────────────────────────────
 validate:

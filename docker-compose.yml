@@ -319,7 +319,8 @@ services:
       - olap-net
 
   superset:
-    image: apache/superset:4.1.1
+    build:
+      context: ./superset
     container_name: py02_superset
     profiles: [viz]
     environment:
